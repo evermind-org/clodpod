@@ -38,6 +38,17 @@ fi
 
 
 ###############################################################################
+# Wait for directory services to load (needed after VM clone/boot)
+###############################################################################
+debug "Waiting for directory services..."
+for i in $(seq 1 10); do
+    if dscl . -read /Users/clodpod &>/dev/null 2>&1; then
+        break
+    fi
+    sleep 1
+done
+
+###############################################################################
 # Rename the computer
 ###############################################################################
 sudo scutil --set ComputerName "clodpod-xcode"
@@ -56,7 +67,14 @@ sudo mkdir -p "/Users/clodpod"
 sudo cp -rf "$DIST_DIR/home/." "/Users/clodpod/"
 
 # Make clodpod the owner of the files
-sudo chown -R "clodpod:clodpod" "/Users/clodpod"
+# Use numeric UID:GID as fallback if directory services hasn't loaded yet
+CLODPOD_UID=$(dscl . -read /Users/clodpod UniqueID 2>/dev/null | awk '{print $2}')
+CLODPOD_GID=$(dscl . -read /Groups/clodpod PrimaryGroupID 2>/dev/null | awk '{print $2}')
+if [[ -n "$CLODPOD_UID" && -n "$CLODPOD_GID" ]]; then
+    sudo chown -R "$CLODPOD_UID:$CLODPOD_GID" "/Users/clodpod"
+else
+    sudo chown -R "clodpod:clodpod" "/Users/clodpod"
+fi
 
 # Fixup file permissions
 sudo chmod 755 "/Users/clodpod"
@@ -79,4 +97,8 @@ fi
 # Allow clodpod user to update homebrew
 ###############################################################################
 debug "Enable clodpod to update brew files"
-sudo chown -R "clodpod:clodpod" "$(brew --prefix)"
+if [[ -n "${CLODPOD_UID:-}" && -n "${CLODPOD_GID:-}" ]]; then
+    sudo chown -R "$CLODPOD_UID:$CLODPOD_GID" "$(brew --prefix)"
+else
+    sudo chown -R "clodpod:clodpod" "$(brew --prefix)"
+fi
