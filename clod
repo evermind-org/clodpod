@@ -1135,6 +1135,12 @@ fi
 
 debug "Checking $DST_VM_NAME IP connectivity"
 IPADDR="$(tart ip --wait 20 "$DST_VM_NAME")"
+
+# Start glances metrics server for orchestrator monitoring
+debug "Starting glances metrics server..."
+ssh -o StrictHostKeyChecking=no -i "$SSH_KEYFILE_PRIV" "clodpod@$IPADDR" \
+    "nohup glances -w --disable-webui -q -p 61209 > /dev/null 2>&1 &" 2>/dev/null || true
+
 if ! nc -z "$IPADDR" 22 ; then
     # shellcheck disable=SC2154 # LOCAL_NETWORK_ERROR is referenced but not assigned (yes it is)
     error "$LOCAL_NETWORK_ERROR"
