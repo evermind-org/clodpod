@@ -96,7 +96,7 @@ fi
 # Install Python packages
 ###############################################################################
 debug "Installing Python packages..."
-pip3 install glances[web]
+pip3 install "glances[web]" || warn "Failed to install glances — VM metrics will be unavailable"
 
 
 ###############################################################################
