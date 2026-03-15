@@ -67,13 +67,15 @@ sudo mkdir -p "/Users/clodpod"
 sudo cp -rf "$DIST_DIR/home/." "/Users/clodpod/"
 
 # Make clodpod the owner of the files
-# Use numeric UID:GID as fallback if directory services hasn't loaded yet
-CLODPOD_UID=$(dscl . -read /Users/clodpod UniqueID 2>/dev/null | awk '{print $2}')
-CLODPOD_GID=$(dscl . -read /Groups/clodpod PrimaryGroupID 2>/dev/null | awk '{print $2}')
+# Use numeric UID:GID — directory services may not resolve names after clone
+CLODPOD_UID=$(dscl . -read /Users/clodpod UniqueID 2>/dev/null | awk '{print $2}' || true)
+CLODPOD_GID=$(dscl . -read /Groups/clodpod PrimaryGroupID 2>/dev/null | awk '{print $2}' || true)
 if [[ -n "$CLODPOD_UID" && -n "$CLODPOD_GID" ]]; then
     sudo chown -R "$CLODPOD_UID:$CLODPOD_GID" "/Users/clodpod"
+elif id -u clodpod &>/dev/null; then
+    sudo chown -R "$(id -u clodpod):$(id -g clodpod)" "/Users/clodpod"
 else
-    sudo chown -R "clodpod:clodpod" "/Users/clodpod"
+    warn "clodpod user not found — skipping chown"
 fi
 
 # Fixup file permissions
@@ -99,6 +101,8 @@ fi
 debug "Enable clodpod to update brew files"
 if [[ -n "${CLODPOD_UID:-}" && -n "${CLODPOD_GID:-}" ]]; then
     sudo chown -R "$CLODPOD_UID:$CLODPOD_GID" "$(brew --prefix)"
+elif id -u clodpod &>/dev/null; then
+    sudo chown -R "$(id -u clodpod):$(id -g clodpod)" "$(brew --prefix)"
 else
-    sudo chown -R "clodpod:clodpod" "$(brew --prefix)"
+    warn "clodpod user not found — skipping brew chown"
 fi
