@@ -181,6 +181,14 @@ else
 fi
 sudo dscl . -passwd /Users/clodpod "$CLODPOD_PASSWORD"
 
+# Create login keychain with a known password for headless credential injection.
+# The orchestrator uses this to inject Claude OAuth tokens via SSH.
+KEYCHAIN_PASSWORD="clodpod-keychain"
+sudo -u clodpod security create-keychain -p "$KEYCHAIN_PASSWORD" \
+    /Users/clodpod/Library/Keychains/login.keychain-db 2>/dev/null || true
+sudo -u clodpod security set-keychain-settings \
+    /Users/clodpod/Library/Keychains/login.keychain-db 2>/dev/null || true
+
 # Now add to the SSH access group (required for SSH login)
 # do not use sudo dscl; it creates duplicate entries when run more than once
 sudo dseditgroup -o edit -a clodpod -t user com.apple.access_ssh
