@@ -1056,9 +1056,8 @@ if [[ "${REBUILD_BASE:-}" != "" ]]; then
 
     # Use SSH instead of tart exec — tart exec crashes when piped
     # through subprocess (no terminal size available)
-    local tmp_ip
     tmp_ip="$(tart ip --wait 20 "$TMP_VM_NAME")"
-    local env_str=""
+    env_str=""
     for e in "${INSTALL_ENV[@]}"; do
         env_str+="$e "
     done
@@ -1095,7 +1094,6 @@ if [[ "${REBUILD_DST:-}" != "" ]]; then
     trace "Running configure.sh..."
     # Use SSH instead of tart exec — tart exec crashes when piped
     # through subprocess (no terminal size available)
-    local tmp_ip
     tmp_ip="$(tart ip --wait 20 "$TMP_VM_NAME")"
     ssh -o StrictHostKeyChecking=no -i "$SSH_KEYFILE_PRIV" "admin@$tmp_ip" \
         "VERBOSE=$VERBOSE bash '/Volumes/My Shared Files/__install/configure.sh'"
