@@ -1054,22 +1054,16 @@ if [[ "${REBUILD_BASE:-}" != "" ]]; then
         INSTALL_ENV+=( "CLODPOD_PASSWORD=$CLODPOD_PASSWORD" )
     fi
 
-    if [[ -t 0 ]]; then
-        # Interactive: use tart exec with TTY
-        tart exec -it "$TMP_VM_NAME" \
-            "${INSTALL_ENV[@]}" bash \
-            "/Volumes/My Shared Files/__install/install.sh"
-    else
-        # Headless: use SSH (tart exec crashes without a TTY)
-        local tmp_ip
-        tmp_ip="$(tart ip --wait 20 "$TMP_VM_NAME")"
-        local env_str=""
-        for e in "${INSTALL_ENV[@]}"; do
-            env_str+="$e "
-        done
-        ssh -o StrictHostKeyChecking=no -i "$SSH_KEYFILE_PRIV" "admin@$tmp_ip" \
-            "${env_str}bash '/Volumes/My Shared Files/__install/install.sh'"
-    fi
+    # Use SSH instead of tart exec — tart exec crashes when piped
+    # through subprocess (no terminal size available)
+    local tmp_ip
+    tmp_ip="$(tart ip --wait 20 "$TMP_VM_NAME")"
+    local env_str=""
+    for e in "${INSTALL_ENV[@]}"; do
+        env_str+="$e "
+    done
+    ssh -o StrictHostKeyChecking=no -i "$SSH_KEYFILE_PRIV" "admin@$tmp_ip" \
+        "${env_str}bash '/Volumes/My Shared Files/__install/install.sh'"
 
     trace "Renaming $TMP_VM_NAME to $BASE_VM_NAME"
     tart rename "$TMP_VM_NAME" "$BASE_VM_NAME"
@@ -1099,18 +1093,12 @@ if [[ "${REBUILD_DST:-}" != "" ]]; then
     fi
 
     trace "Running configure.sh..."
-    if [[ -t 0 ]]; then
-        # Interactive: use tart exec with TTY
-        tart exec -it "$TMP_VM_NAME" \
-            "/usr/bin/env" "VERBOSE=$VERBOSE" bash \
-            "/Volumes/My Shared Files/__install/configure.sh"
-    else
-        # Headless: use SSH (tart exec crashes without a TTY)
-        local tmp_ip
-        tmp_ip="$(tart ip --wait 20 "$TMP_VM_NAME")"
-        ssh -o StrictHostKeyChecking=no -i "$SSH_KEYFILE_PRIV" "admin@$tmp_ip" \
-            "VERBOSE=$VERBOSE bash '/Volumes/My Shared Files/__install/configure.sh'"
-    fi
+    # Use SSH instead of tart exec — tart exec crashes when piped
+    # through subprocess (no terminal size available)
+    local tmp_ip
+    tmp_ip="$(tart ip --wait 20 "$TMP_VM_NAME")"
+    ssh -o StrictHostKeyChecking=no -i "$SSH_KEYFILE_PRIV" "admin@$tmp_ip" \
+        "VERBOSE=$VERBOSE bash '/Volumes/My Shared Files/__install/configure.sh'"
 
     trace "Renaming $TMP_VM_NAME to $DST_VM_NAME"
     tart rename "$TMP_VM_NAME" "$DST_VM_NAME"
