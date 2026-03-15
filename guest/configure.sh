@@ -38,15 +38,45 @@ fi
 
 
 ###############################################################################
-# Wait for directory services to load (needed after VM clone/boot)
+# Ensure clodpod user and group exist (may be lost during tart clone)
 ###############################################################################
-debug "Waiting for directory services..."
-for i in $(seq 1 10); do
-    if dscl . -read /Users/clodpod &>/dev/null 2>&1; then
-        break
-    fi
-    sleep 1
-done
+if ! id -u clodpod &>/dev/null 2>&1; then
+    debug "clodpod user missing — creating..."
+
+    NEXT_UID=$(dscl . -list /Users UniqueID | awk '{print $2}' | sort -n | tail -1)
+    NEXT_UID=$((NEXT_UID + 1))
+
+    # Create group
+    sudo dscl . -create /Groups/clodpod
+    sudo dscl . -create /Groups/clodpod PrimaryGroupID "$NEXT_UID"
+    sudo dscl . -create /Groups/clodpod RealName "clodpod Group"
+
+    # Create user
+    sudo dscl . -create /Users/clodpod
+    sudo dscl . -create /Users/clodpod UniqueID "$NEXT_UID"
+    sudo dscl . -create /Users/clodpod PrimaryGroupID "$NEXT_UID"
+    sudo dscl . -create /Users/clodpod RealName "clodpod User"
+    sudo dscl . -create /Users/clodpod NFSHomeDirectory "/Users/clodpod"
+    sudo dscl . -create /Users/clodpod UserShell "/bin/zsh"
+    sudo dscl . -create /Users/clodpod IsHidden 1
+
+    # Set password and SSH access
+    CLODPOD_PASSWORD=$(openssl rand -base64 32)
+    sudo dscl . -passwd /Users/clodpod "$CLODPOD_PASSWORD"
+    sudo dseditgroup -o edit -a clodpod -t user com.apple.access_ssh
+
+    # Create login keychain
+    sudo mkdir -p /Users/clodpod/Library/Keychains
+    sudo -u clodpod security create-keychain -p "clodpod-keychain" \
+        /Users/clodpod/Library/Keychains/login.keychain-db 2>/dev/null || true
+    sudo -u clodpod security set-keychain-settings \
+        /Users/clodpod/Library/Keychains/login.keychain-db 2>/dev/null || true
+
+    debug "clodpod user created with UID $NEXT_UID"
+else
+    debug "clodpod user exists (UID $(id -u clodpod))"
+fi
+
 
 ###############################################################################
 # Rename the computer
@@ -66,17 +96,8 @@ DIST_DIR="/Volumes/My Shared Files/__install"
 sudo mkdir -p "/Users/clodpod"
 sudo cp -rf "$DIST_DIR/home/." "/Users/clodpod/"
 
-# Make clodpod the owner of the files
-# Use numeric UID:GID — directory services may not resolve names after clone
-CLODPOD_UID=$(dscl . -read /Users/clodpod UniqueID 2>/dev/null | awk '{print $2}' || true)
-CLODPOD_GID=$(dscl . -read /Groups/clodpod PrimaryGroupID 2>/dev/null | awk '{print $2}' || true)
-if [[ -n "$CLODPOD_UID" && -n "$CLODPOD_GID" ]]; then
-    sudo chown -R "$CLODPOD_UID:$CLODPOD_GID" "/Users/clodpod"
-elif id -u clodpod &>/dev/null; then
-    sudo chown -R "$(id -u clodpod):$(id -g clodpod)" "/Users/clodpod"
-else
-    warn "clodpod user not found — skipping chown"
-fi
+# Make clodpod the owner of the files (use numeric IDs for reliability)
+sudo chown -R "$(id -u clodpod):$(id -g clodpod)" "/Users/clodpod"
 
 # Fixup file permissions
 sudo chmod 755 "/Users/clodpod"
@@ -99,10 +120,4 @@ fi
 # Allow clodpod user to update homebrew
 ###############################################################################
 debug "Enable clodpod to update brew files"
-if [[ -n "${CLODPOD_UID:-}" && -n "${CLODPOD_GID:-}" ]]; then
-    sudo chown -R "$CLODPOD_UID:$CLODPOD_GID" "$(brew --prefix)"
-elif id -u clodpod &>/dev/null; then
-    sudo chown -R "$(id -u clodpod):$(id -g clodpod)" "$(brew --prefix)"
-else
-    warn "clodpod user not found — skipping brew chown"
-fi
+sudo chown -R "$(id -u clodpod):$(id -g clodpod)" "$(brew --prefix)"
