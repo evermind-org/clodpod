@@ -786,6 +786,12 @@ while [[ $# -gt 0 ]]; do
             SHOULD_SELECT_PROJECT=false
             shift
             ;;
+        --vm-name)
+            DST_VM_NAME="$2"
+            SHOULD_SELECT_PROJECT=false
+            NO_GRAPHICS=true
+            shift 2
+            ;;
         -h|--help)
             show_help
             exit 0
