@@ -618,6 +618,11 @@ EOF
 # Usage: while IFS= read -r -d '' arg; do args+=("$arg"); done < <(get_map_directories)
 # Outputs NUL-delimited entries like: "--dir" NUL "name:path" NUL
 get_map_directories() {
+    # Named VMs don't mount host directories — agent clones from GitHub
+    if [[ "$DST_VM_NAME" != "clodpod-xcode" ]]; then
+        return
+    fi
+
     local result
     result=$(sqlite3 -separator '|' "$DB_FILE" <<EOF || return 1
 SELECT name, path FROM projects ORDER BY date_added DESC;
@@ -1158,7 +1163,7 @@ EOF
 
 if [[ "$(get_vm_state "$DST_VM_NAME")" != "running" ]]; then
     run_vm "$DST_VM_NAME"
-elif ! check_projects_active ; then
+elif [[ "$DST_VM_NAME" == "clodpod-xcode" ]] && ! check_projects_active; then
     warn "New project directory added; virtual machine restart required"
     read -p "$DST_VM_NAME is running; restart it? (y/N)" -n 1 -r response
     echo
