@@ -258,7 +258,7 @@ stop_all_vms () {
             if [[ "$vm_name" =~ ^clodpod- ]]; then
                 stop_vm "$vm_name"
             fi
-            if [[ "$vm_name" =~ ^clodpod-tmp ]]; then
+            if [[ "$vm_name" =~ ^clodpod-tmp ]] || [[ "$vm_name" =~ ^clodpod-issue- ]]; then
                 delete_vm "$vm_name"
             fi
         done <<< "$running_vms"
@@ -853,7 +853,12 @@ case "${1:-}" in
         COMMAND=start
         ;;
     stop)
-        stop_all_vms
+        if [[ -n "${2:-}" ]]; then
+            stop_vm "$2"
+            delete_vm "$2"
+        else
+            stop_all_vms
+        fi
         exit 0
         ;;
     add|a)
