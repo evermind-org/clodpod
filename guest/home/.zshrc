@@ -102,6 +102,14 @@ if [[ -d "$PROJECT_DIR" ]]; then
     fi
 fi
 
+# Fallback: clone from GitHub when no shared mount (orchestrator dispatch)
+if [[ ! -d "$PROJECT_DIR" ]] && [[ -n "${GITHUB_REPO:-}" ]]; then
+    git clone --branch "${GITHUB_BRANCH:-main}" \
+        "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPO}.git" \
+        "$PROJECT_DIR"
+    cd "$PROJECT_DIR"
+fi
+
 # Run specified application
 command_args=()
 if [[ -n "${COMMAND_ARGS_B64:-}" ]]; then
