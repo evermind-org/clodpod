@@ -1214,4 +1214,8 @@ exec ssh \
         "INITIAL_DIR=$INITIAL_DIR" \
         "COMMAND=${COMMAND:-}" \
         "COMMAND_ARGS_B64=$COMMAND_ARGS_B64" \
+        ${GITHUB_REPO:+"GITHUB_REPO=$GITHUB_REPO"} \
+        ${GITHUB_BRANCH:+"GITHUB_BRANCH=$GITHUB_BRANCH"} \
+        ${GITHUB_ISSUE:+"GITHUB_ISSUE=$GITHUB_ISSUE"} \
+        ${GITHUB_TOKEN:+"GITHUB_TOKEN=$GITHUB_TOKEN"} \
         zsh --login || true
