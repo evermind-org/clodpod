@@ -242,8 +242,10 @@ clone_vm () {
     trace "Cloning $src_vm_name to $dst_vm_name..."
     tart clone "$src_vm_name" "$dst_vm_name"
     tart set "$dst_vm_name" --random-mac --random-serial
-    tart set "$dst_vm_name" --cpu "$(sysctl -n hw.ncpu)"
-    tart set "$dst_vm_name" --memory "$(( $(sysctl -n hw.memsize) * 5 / 8 / 1048576 ))"
+    local cpus=$(( $(sysctl -n hw.ncpu) / MAX_CONCURRENT ))
+    local mem=$(( $(sysctl -n hw.memsize) * 5 / 8 / MAX_CONCURRENT / 1048576 ))
+    tart set "$dst_vm_name" --cpu "$(( cpus > 0 ? cpus : 1 ))"
+    tart set "$dst_vm_name" --memory "$(( mem > 1024 ? mem : 1024 ))"
 }
 
 stop_all_vms () {
@@ -686,6 +688,7 @@ init_db
 NO_GRAPHICS="${NO_GRAPHICS:-}"
 SHOULD_SELECT_PROJECT=true
 ALLOW_SUDO=
+MAX_CONCURRENT="${MAX_CONCURRENT:-1}"
 
 show_help() {
     echo "Usage: clod [options] command [args...] [-- command-args...]"
@@ -790,6 +793,10 @@ while [[ $# -gt 0 ]]; do
             DST_VM_NAME="$2"
             SHOULD_SELECT_PROJECT=false
             NO_GRAPHICS=true
+            shift 2
+            ;;
+        --max-concurrent)
+            MAX_CONCURRENT="$2"
             shift 2
             ;;
         -h|--help)
