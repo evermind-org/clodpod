@@ -76,7 +76,7 @@ export PATH
 # Wait until install.sh has installed coreutils with homebrew
 # so we can use the simpler/easier/better homebrew ln tool
 LN="$(brew --prefix)/opt/coreutils/libexec/gnubin/ln"
-if [[ -x "$LN" ]]; then
+if [[ -x "$LN" && -d "/Volumes/My Shared Files" ]]; then
     mkdir -p "/Users/clodpod/projects"
     fd -t d --max-depth 1 . "/Volumes/My Shared Files" -0 | \
         xargs -0 "$LN" -sf --target "/Users/clodpod/projects"
@@ -90,36 +90,32 @@ fi
 
 
 ###############################################################################
-# Set active project
+# Dispatch via guest launch helper (pushed by orchestrator at dispatch time)
 ###############################################################################
-PROJECT="${PROJECT:-project}"
-PROJECT_DIR="$HOME/projects/$PROJECT"
-if [[ -d "$PROJECT_DIR" ]]; then
-    cd "$PROJECT_DIR"
-    # If INITIAL_DIR is set, navigate to the subdirectory within the project
-    if [[ -n "${INITIAL_DIR:-}" ]] && [[ -d "$PROJECT_DIR/$INITIAL_DIR" ]]; then
-        cd "$PROJECT_DIR/$INITIAL_DIR"
+if [[ -f "$HOME/guest-launch.py" ]]; then
+    python3 "$HOME/guest-launch.py"
+else
+    # Fallback for interactive sessions or when helper is not present
+    PROJECT="${PROJECT:-project}"
+    PROJECT_DIR="$HOME/projects/$PROJECT"
+    if [[ -d "$PROJECT_DIR" ]]; then
+        cd "$PROJECT_DIR"
+        if [[ -n "${INITIAL_DIR:-}" ]] && [[ -d "$PROJECT_DIR/$INITIAL_DIR" ]]; then
+            cd "$PROJECT_DIR/$INITIAL_DIR"
+        fi
     fi
-fi
 
-# Fallback: clone from GitHub when no shared mount (orchestrator dispatch)
-if [[ ! -d "$PROJECT_DIR" ]] && [[ -n "${GITHUB_REPO:-}" ]]; then
-    git clone --branch "${GITHUB_BRANCH:-main}" \
-        "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPO}.git" \
-        "$PROJECT_DIR"
-    cd "$PROJECT_DIR"
-fi
+    # Execute command if set (non-orchestrator dispatch)
+    command_args=()
+    if [[ -n "${COMMAND_ARGS_B64:-}" ]]; then
+        while IFS= read -r -d '' arg; do
+            command_args+=("$arg")
+        done < <(printf '%s' "$COMMAND_ARGS_B64" | base64 --decode)
+    fi
 
-# Run specified application
-command_args=()
-if [[ -n "${COMMAND_ARGS_B64:-}" ]]; then
-    while IFS= read -r -d '' arg; do
-        command_args+=("$arg")
-    done < <(printf '%s' "$COMMAND_ARGS_B64" | base64 --decode)
-fi
-
-if [[ "${COMMAND:-}" != "" ]]; then
-    exec "$COMMAND" "${command_args[@]}"
-elif [[ ${#command_args[@]} -gt 0 ]]; then
-    exec "${command_args[@]}"
+    if [[ "${COMMAND:-}" != "" ]]; then
+        exec "$COMMAND" "${command_args[@]}"
+    elif [[ ${#command_args[@]} -gt 0 ]]; then
+        exec "${command_args[@]}"
+    fi
 fi
