@@ -92,7 +92,7 @@ fi
 ###############################################################################
 # Dispatch via guest launch helper (pushed by orchestrator at dispatch time)
 ###############################################################################
-if [[ -f "$HOME/guest-launch.py" ]]; then
+if [[ -f "$HOME/guest-launch.py" ]] && [[ -z "${ORCHESTRATOR_DISPATCH:-}" ]]; then
     python3 "$HOME/guest-launch.py"
 else
     # Fallback for interactive sessions or when helper is not present
