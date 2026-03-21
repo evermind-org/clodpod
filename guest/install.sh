@@ -70,6 +70,7 @@ BrewApps+=(coreutils)           # replace old BSD command-line tools with GNU
 BrewApps+=(eza)                 # better ls
 BrewApps+=(fd)                  # better than unix `find`
 BrewApps+=(findutils)           # includes gxargs with the '-r' option
+BrewApps+=(gh)                  # GitHub CLI
 BrewApps+=(git)                 # yeah, it's the best
 BrewApps+=(git-delta)           # better pager for git diff
 BrewApps+=(git-lfs)             # big files
