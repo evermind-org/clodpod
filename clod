@@ -1135,9 +1135,11 @@ if [[ "$DST_VM_NAME" == "clodpod-xcode" ]]; then
     fi
 fi
 
-# Clone base image for named VMs (orchestrator dispatches)
+# Clone dest image for named VMs (orchestrator dispatches)
+# Must clone from DST (clodpod-xcode), not BASE, because configure.sh
+# sets up SSH authorized_keys, user config, etc. only in the dest image.
 if [[ "$DST_VM_NAME" != "clodpod-xcode" ]] && ! get_vm_exists "$DST_VM_NAME"; then
-    clone_vm "$BASE_VM_NAME" "$DST_VM_NAME"
+    clone_vm "clodpod-xcode" "$DST_VM_NAME"
 fi
 
 
