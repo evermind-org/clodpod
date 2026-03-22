@@ -77,6 +77,9 @@ else
     debug "clodpod user exists (UID $(id -u clodpod))"
 fi
 
+# Ensure SSH access group membership (tart clone may strip group memberships)
+sudo dseditgroup -o edit -a clodpod -t user com.apple.access_ssh
+
 
 ###############################################################################
 # Rename the computer
