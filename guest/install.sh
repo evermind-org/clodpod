@@ -78,6 +78,7 @@ BrewApps+=(gnu-getopt)          # because OSX getopt is ancient
 BrewApps+=(jq)                  # mangle JSON from the command line
 BrewApps+=(mas)                 # Apple Store command line
 BrewApps+=(node)                # NodeJS
+BrewApps+=(poetry)              # Python dependency manager
 BrewApps+=(python)              # Python language
 BrewApps+=(rg)                  # better grep
 BrewApps+=(sd)                  # better sed
