@@ -98,15 +98,16 @@ fi
 # Install Python packages
 ###############################################################################
 debug "Installing Python packages..."
-sudo pip3 install "glances[web]" || warn "Failed to install glances — VM metrics will be unavailable"
+sudo uv venv /opt/ai-orchestrator
+sudo uv pip install --python /opt/ai-orchestrator/bin/python "glances[web]" || warn "Failed to install glances — VM metrics will be unavailable"
 
 # Install ai_orchestrator wheel (provides ai-orch-launch entry point)
 DIST_DIR="/Volumes/My Shared Files/__dist"
 if ls "$DIST_DIR"/ai_orchestrator-*.whl 1>/dev/null 2>&1; then
     debug "Installing ai_orchestrator wheel..."
-    sudo pip3 install "$DIST_DIR"/ai_orchestrator-*.whl
+    sudo uv pip install --python /opt/ai-orchestrator/bin/python "$DIST_DIR"/ai_orchestrator-*.whl
     # Smoke test: verify entry point resolves
-    python3 -c "from ai_orchestrator.relay.server import Relay" || abort "ERROR: ai_orchestrator wheel install failed"
+    /opt/ai-orchestrator/bin/python -c "from ai_orchestrator.relay.server import Relay" || abort "ERROR: ai_orchestrator wheel install failed"
     info "ai_orchestrator wheel installed successfully"
 else
     warn "No ai_orchestrator wheel found in $DIST_DIR — skipping"
