@@ -218,6 +218,7 @@ run_vm () {
     [[ "${NO_GRAPHICS:-}" == "" ]] || args+=("--no-graphics")
 
     tart run \
+        --net-softnet \
         "${args[@]}" \
         "$vm_name" </dev/null &>/dev/null & disown
     wait_vm_running "$vm_name"
@@ -1039,28 +1040,6 @@ if [[ "$DST_VM_NAME" == "clodpod-xcode" ]]; then
     fi
 fi
 
-# https://github.com/webcoyote/clodpod/issues/5
-# Starting & stopping many VMs causes a DHCP IP address shortage.
-#
-# Tart recommends: You might want to reduce the default DHCP lease time
-# from 86,400 to 600 seconds to avoid DHCP shortage when running lots of VMs daily:
-# https://tart.run/faq/#changing-the-default-dhcp-lease-time
-#
-# Update Internet Sharing's DHCP lease time via SystemConfiguration prefs.
-DHCP_PREFS="/Library/Preferences/SystemConfiguration/com.apple.InternetSharing.default.plist"
-CURRENT_LEASE=$(/usr/libexec/PlistBuddy -c "Print :bootpd:DHCPLeaseTimeSecs" "$DHCP_PREFS" 2>/dev/null || true)
-if [[ "$CURRENT_LEASE" != "600" ]]; then
-    if [[ "$DST_VM_NAME" == "clodpod-xcode" ]]; then
-        sudo -p "Password required to set DHCP lease time for clodpod (600s): " true
-        sudo /usr/bin/defaults write "$DHCP_PREFS" bootpd -dict DHCPLeaseTimeSecs -int 600
-        sudo /bin/launchctl stop com.apple.InternetSharing || true
-        sudo /bin/launchctl start com.apple.InternetSharing || true
-    else
-        warn "DHCP lease time is $CURRENT_LEASE (expected 600). Run 'clod start' interactively to configure."
-    fi
-fi
-
-
 ###############################################################################
 # Create Base VM
 ###############################################################################
@@ -1146,23 +1125,6 @@ fi
 ###############################################################################
 # start the application
 ###############################################################################
-# kitty doesn't set this properly :(
-TERM_PROGRAM="${TERM_PROGRAM:-e.g. ghostty, kitty, iTerm, WezTerm}"
-heredoc LOCAL_NETWORK_ERROR << EOF
-\n
-ERROR: unable to connect to $DST_VM_NAME.
-
-Your terminal app ($TERM_PROGRAM)
-has not been granted "Local Network" access rights,
-which are required to SSH to the Virtual Machine.
-
-- Open "System Settings.app"
-- Navigate to "Privacy & Security"
-- Select "Local Network"
-- Grant access to your terminal application
-\n
-EOF
-
 if [[ "$(get_vm_state "$DST_VM_NAME")" != "running" ]]; then
     run_vm "$DST_VM_NAME"
 elif [[ "$DST_VM_NAME" == "clodpod-xcode" ]] && ! check_projects_active; then
@@ -1186,13 +1148,6 @@ IPADDR="$(tart ip --wait 20 "$DST_VM_NAME")"
 debug "Starting glances metrics server..."
 ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i "$SSH_KEYFILE_PRIV" "clodpod@$IPADDR" \
     "nohup glances -w --disable-webui -q -p 61209 > /dev/null 2>&1 &" 2>/dev/null || true
-
-if ! nc -z "$IPADDR" 22 ; then
-    # shellcheck disable=SC2154 # LOCAL_NETWORK_ERROR is referenced but not assigned (yes it is)
-    error "$LOCAL_NETWORK_ERROR"
-    read -n 1 -s -r -p "Press any key to open System Settings"
-    open "/System/Library/PreferencePanes/Security.prefPane"
-fi
 
 debug "Connect to $DST_VM_NAME (ssh clodpod@$IPADDR)"
 
