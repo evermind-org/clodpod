@@ -109,7 +109,9 @@ sudo chown -R "$(id -u clodpod):$(id -g clodpod)" "/Users/clodpod"
 
 # Fixup file permissions
 sudo chmod 755 "/Users/clodpod"
-sudo chmod 700 "/Users/clodpod/.ssh"
+if [[ -d "/Users/clodpod/.ssh" ]]; then
+    sudo chmod 700 "/Users/clodpod/.ssh"
+fi
 if [[ -f "/Users/clodpod/.ssh/authorized_keys" ]]; then
     sudo chmod 600 "/Users/clodpod/.ssh/authorized_keys"
 fi
