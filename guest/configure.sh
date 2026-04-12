@@ -157,6 +157,6 @@ wait_for_network 60
 # Install Claude Code
 ###############################################################################
 debug "Installing Claude Code for clodpod user..."
-sudo -H -u clodpod /bin/bash -c 'curl -fsSL https://claude.ai/install.sh | sh'
+sudo -H -u clodpod /bin/bash -c 'cd ~ && curl -fsSL https://claude.ai/install.sh | sh'
 test -x /Users/clodpod/.local/bin/claude || abort "Claude Code binary not found after install"
 info "Claude Code installed"
