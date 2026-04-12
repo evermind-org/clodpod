@@ -36,6 +36,11 @@ if [[ $OSTYPE != 'darwin'* ]]; then
     abort "ERROR: this script is for Mac OSX"
 fi
 
+# Ensure Homebrew is on PATH (packer provisioner shells don't pick up /etc/paths.d)
+if [[ -x /opt/homebrew/bin/brew ]]; then
+    eval "$(/opt/homebrew/bin/brew shellenv)"
+fi
+
 
 ###############################################################################
 # Ensure clodpod user and group exist (may be lost during tart clone)
@@ -126,3 +131,32 @@ fi
 ###############################################################################
 debug "Enable clodpod to update brew files"
 sudo chown -R "$(id -u clodpod):$(id -g clodpod)" "$(brew --prefix)"
+
+
+###############################################################################
+# Wait for network connectivity
+###############################################################################
+wait_for_network() {
+    local timeout="${1:-60}"
+    local start=$SECONDS
+    debug "Waiting up to ${timeout}s for network connectivity..."
+    while (( SECONDS - start < timeout )); do
+        if curl -sSo /dev/null --connect-timeout 5 https://claude.ai; then
+            debug "Network is up (after $(( SECONDS - start ))s)"
+            return 0
+        fi
+        sleep 2
+    done
+    abort "Network not available after ${timeout}s"
+}
+
+wait_for_network 60
+
+
+###############################################################################
+# Install Claude Code
+###############################################################################
+debug "Installing Claude Code for clodpod user..."
+sudo -H -u clodpod /bin/bash -c 'cd ~ && curl -fsSL https://claude.ai/install.sh | sh'
+test -x /Users/clodpod/.local/bin/claude || abort "Claude Code binary not found after install"
+info "Claude Code installed"

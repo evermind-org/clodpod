@@ -3,7 +3,8 @@ set -Eeuo pipefail
 
 APP="$HOME/.local/bin/claude"
 if [[ ! -x "$APP" ]]; then
-    echo >&2 "Installing claude..."
-    curl -fsSL https://claude.ai/install.sh | sh
+    echo >&2 "Error: Claude Code not installed at $APP"
+    echo >&2 "Run: curl -fsSL https://claude.ai/install.sh | sh"
+    exit 1
 fi
 exec "$APP" --dangerously-skip-permissions "$@"
