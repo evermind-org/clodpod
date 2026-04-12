@@ -141,7 +141,7 @@ wait_for_network() {
     local start=$SECONDS
     debug "Waiting up to ${timeout}s for network connectivity..."
     while (( SECONDS - start < timeout )); do
-        if curl -fsSo /dev/null --connect-timeout 5 https://claude.ai; then
+        if curl -sSo /dev/null --connect-timeout 5 https://claude.ai; then
             debug "Network is up (after $(( SECONDS - start ))s)"
             return 0
         fi
