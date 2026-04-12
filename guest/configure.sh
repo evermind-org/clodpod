@@ -36,6 +36,11 @@ if [[ $OSTYPE != 'darwin'* ]]; then
     abort "ERROR: this script is for Mac OSX"
 fi
 
+# Ensure Homebrew is on PATH (packer provisioner shells don't pick up /etc/paths.d)
+if [[ -x /opt/homebrew/bin/brew ]]; then
+    eval "$(/opt/homebrew/bin/brew shellenv)"
+fi
+
 
 ###############################################################################
 # Ensure clodpod user and group exist (may be lost during tart clone)

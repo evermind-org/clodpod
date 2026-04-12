@@ -54,6 +54,9 @@ sudo scutil --set HostName "clodpod-xcode-base"
 if ! command -v brew &> /dev/null ; then
     debug "Installing brew..."
     /usr/bin/env bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    # Homebrew adds itself to /etc/paths.d but the current shell doesn't
+    # pick that up. Source brew's shell env so subsequent brew calls work.
+    eval "$(/opt/homebrew/bin/brew shellenv)"
 fi
 
 debug "Updating brew..."
@@ -79,7 +82,7 @@ BrewApps+=(jq)                  # mangle JSON from the command line
 BrewApps+=(mas)                 # Apple Store command line
 BrewApps+=(node)                # NodeJS
 BrewApps+=(poetry)              # Python dependency manager
-BrewApps+=(python)              # Python language
+BrewApps+=(python@3.13)         # Python language (>=3.11 required)
 BrewApps+=(rg)                  # better grep
 BrewApps+=(sd)                  # better sed
 BrewApps+=(shellcheck)          # lint for bash
@@ -98,7 +101,7 @@ fi
 # Install Python packages
 ###############################################################################
 debug "Installing Python packages..."
-sudo uv venv /opt/ai-orchestrator
+sudo uv venv --python 3.13 /opt/ai-orchestrator
 sudo uv pip install --python /opt/ai-orchestrator/bin/python "glances[web]" || warn "Failed to install glances — VM metrics will be unavailable"
 
 # Install ai_orchestrator wheel (provides ai-orch-launch entry point)
