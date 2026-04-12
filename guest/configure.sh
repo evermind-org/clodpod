@@ -137,6 +137,6 @@ sudo chown -R "$(id -u clodpod):$(id -g clodpod)" "$(brew --prefix)"
 # Install Claude Code
 ###############################################################################
 debug "Installing Claude Code for clodpod user..."
-sudo -H -u clodpod /bin/bash -c 'curl -fsSL https://claude.ai/install.sh | sh'
+sudo -H -u clodpod -D /Users/clodpod /bin/bash -c 'curl -fsSL https://claude.ai/install.sh | sh'
 test -x /Users/clodpod/.local/bin/claude || abort "Claude Code binary not found after install"
 info "Claude Code installed"
